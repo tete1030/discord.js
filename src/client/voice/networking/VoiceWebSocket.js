@@ -24,6 +24,7 @@ class VoiceWebSocket extends EventEmitter {
      * @type {number}
      */
     this.attempts = 0;
+    this.resetAttemptTimeout = null;
 
     this.dead = false;
     this.connection.on('closing', this.shutdown.bind(this));
@@ -48,12 +49,23 @@ class VoiceWebSocket extends EventEmitter {
    * Resets the current WebSocket.
    */
   reset() {
+    this.clearResetAttemptTimeout()
     this.emit('debug', `[WS] reset requested`);
     if (this.ws) {
       if (this.ws.readyState !== WebSocket.CLOSED) this.ws.close();
       this.ws = null;
     }
     this.clearHeartbeat();
+  }
+
+  /**
+   * clear Timeout for reseting attempts
+   */
+  clearResetAttemptTimeout() {
+    if (this.resetAttemptTimeout) {
+        this.client.clearTimeout(this.resetAttemptTimeout);
+        this.resetAttemptTimeout = null;
+    }
   }
 
   /**
@@ -128,7 +140,15 @@ class VoiceWebSocket extends EventEmitter {
     }).catch(() => {
       this.emit('error', new Error('VOICE_JOIN_SOCKET_CLOSED'));
     }).then(() => {
-      this.attempts = 0;
+      let _this = this;
+      if (this.resetAttemptTimeout) {
+          this.resetAttemptTimeout.refresh();
+      } else {
+          this.resetAttemptTimeout = this.client.setTimeout(() => {
+            _this.attempts = 1;
+            _this.clearResetAttemptTimeout();
+          }, 10000);
+      }
     });
   }
 
@@ -149,6 +169,7 @@ class VoiceWebSocket extends EventEmitter {
    * Called whenever the connection to the WebSocket server is lost.
    */
   onClose() {
+    this.clearResetAttemptTimeout()
     this.emit('debug', `[WS] closed`);
     if (!this.dead) this.client.setTimeout(this.connect.bind(this), this.attempts * 1000);
   }
@@ -158,6 +179,7 @@ class VoiceWebSocket extends EventEmitter {
    * @param {Error} error The error that occurred
    */
   onError(error) {
+    this.clearResetAttemptTimeout()
     this.emit('debug', `[WS] Error: ${error}`);
     this.emit('error', error);
   }
