@@ -127,6 +127,8 @@ class VoiceWebSocket extends EventEmitter {
       },
     }).catch(() => {
       this.emit('error', new Error('VOICE_JOIN_SOCKET_CLOSED'));
+    }).then(() => {
+      this.attempts = 0;
     });
   }
 
