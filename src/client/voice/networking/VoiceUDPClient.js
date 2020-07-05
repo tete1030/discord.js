@@ -144,7 +144,7 @@ function parseLocalPacket(message) {
     const packet = Buffer.from(message);
     let address = '';
     for (let i = 4; i < packet.indexOf(0, i); i++) address += String.fromCharCode(packet[i]);
-    const port = parseInt(packet.readUIntLE(packet.length - 2, 2).toString(10), 10);
+    const port = parseInt(packet.readUIntBE(packet.length - 2, 2).toString(10), 10);
     return { address, port };
   } catch (error) {
     return { error };
