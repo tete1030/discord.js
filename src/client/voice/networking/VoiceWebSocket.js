@@ -180,7 +180,7 @@ class VoiceWebSocket extends EventEmitter {
    */
   onError(error) {
     this.clearResetAttemptTimeout()
-    this.emit('debug', `[WS] Error: ${error}`);
+    this.emit('debug', `[WS] Error: ${JSON.stringify(error)}`);
     this.emit('error', error);
   }
 
